@@ -20,9 +20,8 @@ from cassandra.query import BatchStatement
 cluster = Cluster()
 
 # create a session - connect to a keyspace
-session = cluster.connect('prash')
-
 # NB can also use session.set_keyspace('') OR session.execute('USE prash')
+session = cluster.connect('prash')
 
 # Create an example table
 session.execute("""CREATE TABLE IF NOT EXISTS prash.test(
@@ -61,7 +60,7 @@ prep_statement = session.prepare("""INSERT INTO prash.test (url, final_url, doc_
 basic_insert = """INSERT INTO prash.test (url, final_url, doc_id, run_id, doubleclick_fl, new_relic, comscore, facebook_li, crazy_egg, omniture, mediamath) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
 
 
-def batch(rows, batchsize=1):
+def make_batch(rows, batchsize=1):
     row_len = len(rows)
     for idx in range(0, row_len, batchsize):
         yield rows[idx:min(idx+batchsize, row_len)]
@@ -72,7 +71,7 @@ def test_batch_insert(rows):
 
     print "inserting data"
     t1 = time.time()
-    batch_gen = batch(rows, batchsize=1000)
+    batch_gen = make_batch(rows, batchsize=2000)
     for batch in batch_gen:
         batch_stat = BatchStatement()
         for row in batch:
@@ -82,3 +81,6 @@ def test_batch_insert(rows):
         session.execute(batch_stat)
 
     print "done, took: ", time.time() - t1
+
+if __name__ == "__main__":
+    test_batch_insert(rows)
