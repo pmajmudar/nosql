@@ -64,11 +64,11 @@ def thread_insert():
 
 
 t0 = time.time()
-s3 = boto.connect_s3()
+s3 = boto.connect_s3(is_secure=False)
 bucket = s3.get_bucket('gi-perf-test')
 print "time to connect + bucket ", time.time()-t0
 
-test_keys = [uuid.uuid4().hex for i in range(2000)]
+test_keys = [uuid.uuid4().hex for i in range(20000)]
 
 gpool = gevent.pool.Pool(size=100)
 data = read_fixture()
