@@ -9,6 +9,8 @@ from boto.s3.key import Key
 import threading
 import uuid
 import time
+import random
+import glob
 
 # Connect to S3
 #s3 = boto.connect_s3()
@@ -16,9 +18,19 @@ import time
 # Fetch bucket
 #bucket = s3.get_bucket('gi-app')
 
+def read_fixture():
+    """Read HTML fixture data."""
+
+    data = []
+    files = glob.glob('fixture/*.html')
+    for file_ in files:
+        data.append(open(file_, 'r').read())
+
+    return data
+
 
 def set_data_and_print():
-    "Set some basic data and printed."
+    """Set some basic data and printed."""
 
     k = Key(bucket)
     k.key = 'prash1'
@@ -27,10 +39,16 @@ def set_data_and_print():
     for r in results:
         print r
 
-def upload(insert_key):
+def upload(insert_key, values=None):
+    """Upload to S3."""
+
     #s3 = boto.connect_s3()
     #bucket = s3.get_bucket('gi-perf-test-2')
-    key = bucket.new_key(insert_key).set_contents_from_string('This is a test')
+    if not values:
+        key = bucket.new_key(insert_key).set_contents_from_string('This is a test')
+    else:
+        key = bucket.new_key(insert_key).set_contents_from_string(random.choice(values))
+
     return insert_key
 
 def thread_insert():
@@ -47,14 +65,16 @@ def thread_insert():
 
 t0 = time.time()
 s3 = boto.connect_s3()
-bucket = s3.get_bucket('gi-perf-test-3')
+bucket = s3.get_bucket('gi-perf-test')
 print "time to connect + bucket ", time.time()-t0
 
-test_keys = [uuid.uuid4().hex for i in range(20000)]
+test_keys = [uuid.uuid4().hex for i in range(2000)]
+
+gpool = gevent.pool.Pool(size=100)
+data = read_fixture()
 print "Starting"
 t1 = time.time()
-gpool = gevent.pool.Pool(size=100)
-jobs = [gpool.spawn(upload, key) for key in test_keys]
+jobs = [gpool.spawn(upload, key, data) for key in test_keys]
 
 gevent.joinall(jobs)
 print "Done. ", time.time() - t1
